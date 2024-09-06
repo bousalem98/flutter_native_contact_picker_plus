@@ -2,13 +2,15 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'flutter_native_contact_picker_plus_method_channel.dart';
 
-abstract class FlutterNativeContactPickerPlusPlatform extends PlatformInterface {
+abstract class FlutterNativeContactPickerPlusPlatform
+    extends PlatformInterface {
   /// Constructs a FlutterNativeContactPickerPlusPlatform.
   FlutterNativeContactPickerPlusPlatform() : super(token: _token);
 
   static final Object _token = Object();
 
-  static FlutterNativeContactPickerPlusPlatform _instance = MethodChannelFlutterNativeContactPickerPlus();
+  static FlutterNativeContactPickerPlusPlatform _instance =
+      MethodChannelFlutterNativeContactPickerPlus();
 
   /// The default instance of [FlutterNativeContactPickerPlusPlatform] to use.
   ///

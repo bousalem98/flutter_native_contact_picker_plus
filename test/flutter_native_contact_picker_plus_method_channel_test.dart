@@ -5,11 +5,14 @@ import 'package:flutter_native_contact_picker_plus/flutter_native_contact_picker
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  MethodChannelFlutterNativeContactPickerPlus platform = MethodChannelFlutterNativeContactPickerPlus();
-  const MethodChannel channel = MethodChannel('flutter_native_contact_picker_plus');
+  MethodChannelFlutterNativeContactPickerPlus platform =
+      MethodChannelFlutterNativeContactPickerPlus();
+  const MethodChannel channel =
+      MethodChannel('flutter_native_contact_picker_plus');
 
   setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
       channel,
       (MethodCall methodCall) async {
         return '42';
@@ -18,7 +21,8 @@ void main() {
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 
   test('getPlatformVersion', () async {

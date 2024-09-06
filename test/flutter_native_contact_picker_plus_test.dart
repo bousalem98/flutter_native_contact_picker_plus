@@ -7,23 +7,28 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 class MockFlutterNativeContactPickerPlusPlatform
     with MockPlatformInterfaceMixin
     implements FlutterNativeContactPickerPlusPlatform {
-
   @override
   Future<String?> getPlatformVersion() => Future.value('42');
 }
 
 void main() {
-  final FlutterNativeContactPickerPlusPlatform initialPlatform = FlutterNativeContactPickerPlusPlatform.instance;
+  final FlutterNativeContactPickerPlusPlatform initialPlatform =
+      FlutterNativeContactPickerPlusPlatform.instance;
 
-  test('$MethodChannelFlutterNativeContactPickerPlus is the default instance', () {
-    expect(initialPlatform, isInstanceOf<MethodChannelFlutterNativeContactPickerPlus>());
+  test('$MethodChannelFlutterNativeContactPickerPlus is the default instance',
+      () {
+    expect(initialPlatform,
+        isInstanceOf<MethodChannelFlutterNativeContactPickerPlus>());
   });
 
   test('getPlatformVersion', () async {
-    FlutterNativeContactPickerPlus flutterNativeContactPickerPlusPlugin = FlutterNativeContactPickerPlus();
-    MockFlutterNativeContactPickerPlusPlatform fakePlatform = MockFlutterNativeContactPickerPlusPlatform();
+    FlutterNativeContactPickerPlus flutterNativeContactPickerPlusPlugin =
+        FlutterNativeContactPickerPlus();
+    MockFlutterNativeContactPickerPlusPlatform fakePlatform =
+        MockFlutterNativeContactPickerPlusPlatform();
     FlutterNativeContactPickerPlusPlatform.instance = fakePlatform;
 
-    expect(await flutterNativeContactPickerPlusPlugin.getPlatformVersion(), '42');
+    expect(
+        await flutterNativeContactPickerPlusPlugin.getPlatformVersion(), '42');
   });
 }
