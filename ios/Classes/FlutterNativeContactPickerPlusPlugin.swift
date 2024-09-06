@@ -51,63 +51,48 @@ class MultiPickerHandler: PickerHandler {
     }
 }
 
-public class FlutterNativeContactPickerPlusPlugin: NSObject, FlutterPlugin {
-    private var delegate: PickerHandler?
+public class SwiftFlutterNativeContactPickerPlusPlugin: NSObject, FlutterPlugin {
+    var delegate: PickerHandler?
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "flutter_native_contact_picker_plus", binaryMessenger: registrar.messenger())
-        let instance = FlutterNativeContactPickerPlusPlugin()
+        let instance = SwiftFlutterNativeContactPickerPlusPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
 
-    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        switch call.method {
-        case "selectContact":
-            if let _ = delegate {
-                result(FlutterError(code: "multiple_requests", message: "Cancelled by a second request.", details: nil))
-                delegate = nil
-            }
-            if #available(iOS 9.0, *) {
-                delegate = SinglePickerHandler(result: result)
-                let contactPicker = CNContactPickerViewController()
-                contactPicker.delegate = delegate
-                contactPicker.displayedPropertyKeys = [CNContactPhoneNumbersKey]
-                presentContactPicker(contactPicker)
-            }
-        case "selectContacts":
-            if let _ = delegate {
-                result(FlutterError(code: "multiple_requests", message: "Cancelled by a second request.", details: nil))
-                delegate = nil
-            }
-            if #available(iOS 9.0, *) {
-                delegate = MultiPickerHandler(result: result)
-                let contactPicker = CNContactPickerViewController()
-                contactPicker.delegate = delegate
-                contactPicker.displayedPropertyKeys = [CNContactPhoneNumbersKey]
-                presentContactPicker(contactPicker)
-            }
-        case "getPlatformVersion":
-            result("iOS " + UIDevice.current.systemVersion)
-        default:
-            result(FlutterMethodNotImplemented)
-        }
+   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+      if("selectContact" == call.method || "selectContacts" == call.method) {
+        if(_delegate != nil) {
+            _delegate!.result(FlutterError(code: "multiple_requests", message: "Cancelled by a second request.", details: nil));
+            _delegate = nil;
+          }
+
+          if #available(iOS 9.0, *){
+              let single = call.method == "selectContact";
+              _delegate = single ? SinglePickerHandler(result: result) : MultiPickerHandler(result: result);
+              let contactPicker = CNContactPickerViewController()
+              contactPicker.delegate = _delegate
+              contactPicker.displayedPropertyKeys = [CNContactPhoneNumbersKey]
+              
+              // find proper keyWindow
+              var keyWindow: UIWindow? = nil
+              if #available(iOS 13, *) {
+                  keyWindow = UIApplication.shared.connectedScenes.filter {
+                      $0.activationState == .foregroundActive
+                  }.compactMap { $0 as? UIWindowScene
+                  }.first?.windows.filter({ $0.isKeyWindow}).first
+              } else {
+                  keyWindow = UIApplication.shared.keyWindow
+              }
+              
+              let viewController = keyWindow?.rootViewController
+              viewController?.present(contactPicker, animated: true, completion: nil)
+          }
+      }
+       else
+          {
+              result(FlutterMethodNotImplemented)
+          }
     }
 
-    private func presentContactPicker(_ contactPicker: CNContactPickerViewController) {
-        var keyWindow: UIWindow? = nil
-        if #available(iOS 13, *) {
-            keyWindow = UIApplication.shared.connectedScenes
-                .filter { $0.activationState == .foregroundActive }
-                .compactMap { $0 as? UIWindowScene }
-                .first?.windows
-                .filter { $0.isKeyWindow }
-                .first
-        } else {
-            keyWindow = UIApplication.shared.keyWindow
-        }
-        
-        if let viewController = keyWindow?.rootViewController {
-            viewController.present(contactPicker, animated: true, completion: nil)
-        }
-    }
 }

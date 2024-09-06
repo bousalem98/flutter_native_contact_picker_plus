@@ -5,13 +5,13 @@
 Pod::Spec.new do |s|
   s.name             = 'flutter_native_contact_picker_plus'
   s.version          = '0.0.1'
-  s.summary          = 'A new Flutter plugin project.'
+  s.summary          = 'An enhanced version of flutter_native_contact_picker for selecting contacts from the address book.'
   s.description      = <<-DESC
-A new Flutter plugin project.
+An enhanced version of flutter_native_contact_picker for selecting contacts from the address book.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/bousalem98/flutter_native_contact_picker_plus'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Mohamed Salem Bousalem' => 'hkouma2011@gmail.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
