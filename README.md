@@ -48,20 +48,22 @@ An enhanced Flutter plugin that provides native UI to select contacts with compr
 
 Add this to your `pubspec.yaml`:
 
-````yaml
+```yaml
 dependencies:
   flutter_native_contact_picker_plus: ^1.0.0
+```
 
 ---
 
 ## ⚙️ Permissions
 
-| Platform | Permission                         | Required For                                   |
-| -------- | --------------------------------- | ---------------------------------------------- |
+| Platform | Permission                         | Required For                                                                                         |
+| -------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Android  | `android.permission.READ_CONTACTS` | Required for accessing email, avatar, postal addresses, organization info, birthday, notes, websites |
-| iOS      | `NSContactsUsageDescription`      | Required for accessing email, avatar, postal addresses, organization info, birthday, notes, websites |
+| iOS      | `NSContactsUsageDescription`       | Required for accessing email, avatar, postal addresses, organization info, birthday, notes, websites |
 
 > **Note:**
+>
 > - Basic fields like `fullName`, `phoneNumbers`, and `selectedPhoneNumber` can be accessed **without any permission** when using the native contact picker UI.
 > - Access to other detailed fields requires user permission and may be denied gracefully.
 
@@ -73,49 +75,49 @@ dependencies:
 
 Represents a contact selected by the user.
 
-| Property             | Type                     | Description                                      |
-| -------------------- | ------------------------ | ------------------------------------------------ |
-| `fullName`           | `String?`                | Contact's full name                              |
-| `phoneNumbers`       | `List<String>?`          | All phone numbers attached to the contact       |
-| `selectedPhoneNumber`| `String?`                | The phone number selected specifically (if any)|
-| `emailAddresses`     | `List<EmailAddress>?`    | List of email addresses with labels              |
-| `avatar`             | `String?`                | Base64-encoded avatar image (nullable)           |
-| `postalAddresses`    | `List<PostalAddress>?`   | List of postal addresses with labels              |
-| `organizationInfo`   | `OrganizationInfo?`      | Company and job title info                         |
-| `birthday`           | `String?`                | Birthday in ISO 8601 format (e.g., `1994-11-12`) |
-| `notes`              | `String?`                | User notes                                        |
-| `websiteURLs`        | `List<String>?`          | List of website URLs                              |
+| Property              | Type                   | Description                                      |
+| --------------------- | ---------------------- | ------------------------------------------------ |
+| `fullName`            | `String?`              | Contact's full name                              |
+| `phoneNumbers`        | `List<String>?`        | All phone numbers attached to the contact        |
+| `selectedPhoneNumber` | `String?`              | The phone number selected specifically (if any)  |
+| `emailAddresses`      | `List<EmailAddress>?`  | List of email addresses with labels              |
+| `avatar`              | `String?`              | Base64-encoded avatar image (nullable)           |
+| `postalAddresses`     | `List<PostalAddress>?` | List of postal addresses with labels             |
+| `organizationInfo`    | `OrganizationInfo?`    | Company and job title info                       |
+| `birthday`            | `String?`              | Birthday in ISO 8601 format (e.g., `1994-11-12`) |
+| `notes`               | `String?`              | User notes                                       |
+| `websiteURLs`         | `List<String>?`        | List of website URLs                             |
 
 ### EmailAddress
 
 Represents an email address with a label.
 
-| Property | Type     | Description            |
-| -------- | -------- | ---------------------- |
-| `email`  | `String?`| Email address          |
-| `label`  | `String?`| Label (e.g., "home")   |
+| Property | Type      | Description          |
+| -------- | --------- | -------------------- |
+| `email`  | `String?` | Email address        |
+| `label`  | `String?` | Label (e.g., "home") |
 
 ### PostalAddress
 
 Represents a postal address.
 
-| Property    | Type     | Description            |
-| ----------- | -------- | ---------------------- |
-| `street`    | `String?`| Street address         |
-| `city`      | `String?`| City                   |
-| `state`     | `String?`| State                  |
-| `postalCode`| `String?`| Postal code            |
-| `country`   | `String?`| Country                |
-| `label`     | `String?`| Label (e.g., "work")   |
+| Property     | Type      | Description          |
+| ------------ | --------- | -------------------- |
+| `street`     | `String?` | Street address       |
+| `city`       | `String?` | City                 |
+| `state`      | `String?` | State                |
+| `postalCode` | `String?` | Postal code          |
+| `country`    | `String?` | Country              |
+| `label`      | `String?` | Label (e.g., "work") |
 
 ### OrganizationInfo
 
 Represents organization information.
 
-| Property  | Type     | Description            |
-| --------- | -------- | ---------------------- |
-| `company` | `String?`| Company name           |
-| `jobTitle`| `String?`| Job title              |
+| Property   | Type      | Description  |
+| ---------- | --------- | ------------ |
+| `company`  | `String?` | Company name |
+| `jobTitle` | `String?` | Job title    |
 
 ---
 
@@ -249,7 +251,7 @@ class MyAppState extends State<MyApp> {
   }
 }
 
-````
+```
 
 Also, for whole example, check out the **example** app in the [example](https://github.com/bousalem98/flutter_native_contact_picker_plus/tree/main/example) directory or the 'Example' tab on pub.dartlang.org for a more complete example.
 
