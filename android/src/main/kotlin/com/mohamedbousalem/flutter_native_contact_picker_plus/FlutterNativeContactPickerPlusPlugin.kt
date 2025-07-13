@@ -14,6 +14,9 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.PluginRegistry
 import java.util.HashMap
+import android.net.Uri
+import android.util.Log
+
 
 /** FlutterNativeContactPickerPlusPlugin */
 class FlutterNativeContactPickerPlusPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, PluginRegistry.ActivityResultListener {
@@ -21,6 +24,7 @@ class FlutterNativeContactPickerPlusPlugin : FlutterPlugin, MethodCallHandler, A
   private lateinit var channel: MethodChannel
   private var activity: Activity? = null
   private var pendingResult: Result? = null
+  private var selectPhoneNumber: Boolean = false
   private val PICK_CONTACT = 2015
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -40,6 +44,20 @@ class FlutterNativeContactPickerPlusPlugin : FlutterPlugin, MethodCallHandler, A
         val intent = Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)
         activity?.startActivityForResult(intent, PICK_CONTACT)
       }
+      "selectPhoneNumber" -> {
+        pendingResult = result
+        selectPhoneNumber = true
+        val intent = Intent(Intent.ACTION_PICK).apply {
+            type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
+        }
+        try {
+          activity?.startActivityForResult(intent, PICK_CONTACT)
+        } catch (e: Exception) {
+          result.error("ERROR", "Failed to start phone picker: ${e.message}", null)
+        }
+      }
+      "selectContacts" ->  result.error("NOT_SUPPORTED", "Multiple contact selection is not supported on Android", null)
+      
       "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
       else -> result.notImplemented()
     }
@@ -66,34 +84,607 @@ class FlutterNativeContactPickerPlusPlugin : FlutterPlugin, MethodCallHandler, A
   override fun onDetachedFromActivity() {
     this.activity = null
   }
-
-  override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-    if (requestCode != PICK_CONTACT) {
-      return false
-    }
+override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+    if (requestCode != PICK_CONTACT) return false
     if (resultCode != RESULT_OK) {
-      pendingResult?.success(null)
-      pendingResult = null
-      return true
+        pendingResult?.success(null)
+        pendingResult = null
+        return true
     }
 
     data?.data?.let { contactUri ->
-      val cursor = activity!!.contentResolver.query(contactUri, null, null, null, null)
-      cursor?.use {
-        it.moveToFirst()
-        val number = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
-        val fullName = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
-        val contact = HashMap<String, Any>()
-        contact["fullName"] = fullName
-        contact["phoneNumbers"] = listOf(number)
-        pendingResult?.success(contact)
-        pendingResult = null
-        return@use true
-      }
+        val cursor = activity!!.contentResolver.query(contactUri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val contact = HashMap<String, Any?>()
+                
+                // Basic info available without permissions
+                val contactId = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID))
+                val lookupKey = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.LOOKUP_KEY))
+                val fullName = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
+                val number = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                val photoUri = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI))
+                val phoneType = it.getInt(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE))
+                
+                contact.apply {
+                    put("fullName", fullName)
+                    put("selectedPhoneNumber", number)
+                    put("phoneNumbers", listOf(number))
+                    put("contactId", contactId)
+                    put("lookupKey", lookupKey)
+                    put("phoneType", when (phoneType) {
+                        ContactsContract.CommonDataKinds.Phone.TYPE_HOME -> "home"
+                        ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE -> "mobile"
+                        ContactsContract.CommonDataKinds.Phone.TYPE_WORK -> "work"
+                        else -> "other"
+                    })
+                    
+                    // Initialize all fields with default values
+                    put("emailAddresses", emptyList<Map<String, String>>())
+                    put("postalAddresses", emptyList<Map<String, String>>())
+                    put("websiteURLs", emptyList<String>())
+                    put("organizationInfo", null)
+                    put("birthday", null)
+                    put("notes", null)
+                    put("avatar", null)
+                }
+
+                // Handle photo separately since it requires URI permission
+                if (photoUri != null) {
+                    try {
+                        activity?.contentResolver?.openInputStream(Uri.parse(photoUri))?.use { stream ->
+                            val bytes = stream.readBytes()
+                        contact["avatar"] = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                        }
+                    } catch (e: SecurityException) {
+                        Log.w("ContactPicker", "Avatar requires READ_CONTACTS permission")
+                    } catch (e: Exception) {
+                        Log.w("ContactPicker", "Failed to read avatar: ${e.message}")
+                    }
+                }
+
+                // Process each field with individual try-catch
+                processEmails(contact, contactId)
+                processAddresses(contact, contactId)
+                processOrganization(contact, contactId)
+                processBirthday(contact, contactId)
+                processNotes(contact, contactId)
+                processWebsites(contact, contactId)
+                
+                pendingResult?.success(contact)
+            } else {
+                pendingResult?.success(null)
+            }
+            pendingResult = null
+            return true
+        }
     }
 
     pendingResult?.success(null)
     pendingResult = null
     return true
-  }
 }
+
+private fun processEmails(contact: HashMap<String, Any?>, contactId: String?) {
+    try {
+        val emails = mutableListOf<Map<String, String>>()
+        activity?.contentResolver?.query(
+            ContactsContract.CommonDataKinds.Email.CONTENT_URI,
+            arrayOf(
+                ContactsContract.CommonDataKinds.Email.ADDRESS,
+                ContactsContract.CommonDataKinds.Email.TYPE
+            ),
+            "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = ?",
+            arrayOf(contactId),
+            null
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                emails.add(mapOf(
+                    "email" to (cursor.getString(cursor.getColumnIndexOrThrow(
+                        ContactsContract.CommonDataKinds.Email.ADDRESS)) ?: ""),
+                    "label" to when (cursor.getInt(cursor.getColumnIndexOrThrow(
+                        ContactsContract.CommonDataKinds.Email.TYPE))) {
+                        ContactsContract.CommonDataKinds.Email.TYPE_HOME -> "home"
+                        ContactsContract.CommonDataKinds.Email.TYPE_WORK -> "work"
+                        ContactsContract.CommonDataKinds.Email.TYPE_MOBILE -> "mobile"
+                        else -> "other"
+                    }
+                ))
+            }
+        }
+        contact["emailAddresses"] = emails
+    } catch (e: SecurityException) {
+        Log.w("ContactPicker", "Emails require READ_CONTACTS permission")
+    } catch (e: Exception) {
+        Log.w("ContactPicker", "Failed to read emails: ${e.message}")
+    }
+}
+
+private fun processAddresses(contact: HashMap<String, Any?>, contactId: String?) {
+    try {
+        val addresses = mutableListOf<Map<String, String>>()
+        activity?.contentResolver?.query(
+            ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_URI,
+            arrayOf(
+                ContactsContract.CommonDataKinds.StructuredPostal.STREET,
+                ContactsContract.CommonDataKinds.StructuredPostal.CITY,
+                ContactsContract.CommonDataKinds.StructuredPostal.REGION,
+                ContactsContract.CommonDataKinds.StructuredPostal.POSTCODE,
+                ContactsContract.CommonDataKinds.StructuredPostal.COUNTRY,
+                ContactsContract.CommonDataKinds.StructuredPostal.TYPE
+            ),
+            "${ContactsContract.CommonDataKinds.StructuredPostal.CONTACT_ID} = ?",
+            arrayOf(contactId),
+            null
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                addresses.add(mapOf(
+                    "street" to (cursor.getString(cursor.getColumnIndexOrThrow(
+                        ContactsContract.CommonDataKinds.StructuredPostal.STREET)) ?: ""),
+                    "city" to (cursor.getString(cursor.getColumnIndexOrThrow(
+                        ContactsContract.CommonDataKinds.StructuredPostal.CITY)) ?: ""),
+                    "state" to (cursor.getString(cursor.getColumnIndexOrThrow(
+                        ContactsContract.CommonDataKinds.StructuredPostal.REGION)) ?: ""),
+                    "postalCode" to (cursor.getString(cursor.getColumnIndexOrThrow(
+                        ContactsContract.CommonDataKinds.StructuredPostal.POSTCODE)) ?: ""),
+                    "country" to (cursor.getString(cursor.getColumnIndexOrThrow(
+                        ContactsContract.CommonDataKinds.StructuredPostal.COUNTRY)) ?: ""),
+                    "label" to when (cursor.getInt(cursor.getColumnIndexOrThrow(
+                        ContactsContract.CommonDataKinds.StructuredPostal.TYPE))) {
+                        ContactsContract.CommonDataKinds.StructuredPostal.TYPE_HOME -> "home"
+                        ContactsContract.CommonDataKinds.StructuredPostal.TYPE_WORK -> "work"
+                        else -> "other"
+                    }
+                ))
+            }
+        }
+        contact["postalAddresses"] = addresses
+    } catch (e: SecurityException) {
+        Log.w("ContactPicker", "Addresses require READ_CONTACTS permission")
+    } catch (e: Exception) {
+        Log.w("ContactPicker", "Failed to read addresses: ${e.message}")
+    }
+}
+
+private fun processOrganization(contact: HashMap<String, Any?>, contactId: String?) {
+    try {
+        val orgInfo = mutableMapOf<String, String>()
+        activity?.contentResolver?.query(
+            ContactsContract.Data.CONTENT_URI,
+            arrayOf(
+                ContactsContract.CommonDataKinds.Organization.COMPANY,
+                ContactsContract.CommonDataKinds.Organization.TITLE
+            ),
+            "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+            arrayOf(
+                contactId,
+                ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE
+            ),
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                orgInfo["company"] = cursor.getString(cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Organization.COMPANY)) ?: ""
+                orgInfo["jobTitle"] = cursor.getString(cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Organization.TITLE)) ?: ""
+            }
+        }
+        if (orgInfo.isNotEmpty()) {
+            contact["organizationInfo"] = orgInfo
+        }
+    } catch (e: SecurityException) {
+        Log.w("ContactPicker", "Organization info requires READ_CONTACTS permission")
+    } catch (e: Exception) {
+        Log.w("ContactPicker", "Failed to read organization info: ${e.message}")
+    }
+}
+
+private fun processBirthday(contact: HashMap<String, Any?>, contactId: String?) {
+    try {
+        activity?.contentResolver?.query(
+            ContactsContract.Data.CONTENT_URI,
+            arrayOf(ContactsContract.CommonDataKinds.Event.START_DATE),
+            "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+            arrayOf(
+                contactId,
+                ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE
+            ),
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                contact["birthday"] = cursor.getString(cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Event.START_DATE))
+            }
+        }
+    } catch (e: SecurityException) {
+        Log.w("ContactPicker", "Birthday requires READ_CONTACTS permission")
+    } catch (e: Exception) {
+        Log.w("ContactPicker", "Failed to read birthday: ${e.message}")
+    }
+}
+
+private fun processNotes(contact: HashMap<String, Any?>, contactId: String?) {
+    try {
+        activity?.contentResolver?.query(
+            ContactsContract.Data.CONTENT_URI,
+            arrayOf(ContactsContract.CommonDataKinds.Note.NOTE),
+            "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+            arrayOf(
+                contactId,
+                ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE
+            ),
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                contact["notes"] = cursor.getString(cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Note.NOTE))
+            }
+        }
+    } catch (e: SecurityException) {
+        Log.w("ContactPicker", "Notes require READ_CONTACTS permission")
+    } catch (e: Exception) {
+        Log.w("ContactPicker", "Failed to read notes: ${e.message}")
+    }
+}
+
+private fun processWebsites(contact: HashMap<String, Any?>, contactId: String?) {
+    try {
+        val websites = mutableListOf<String>()
+        activity?.contentResolver?.query(
+            ContactsContract.Data.CONTENT_URI,
+            arrayOf(ContactsContract.CommonDataKinds.Website.URL),
+            "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+            arrayOf(
+                contactId,
+                ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE
+            ),
+            null
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                websites.add(cursor.getString(cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Website.URL)) ?: "")
+            }
+        }
+        contact["websiteURLs"] = websites
+    } catch (e: SecurityException) {
+        Log.w("ContactPicker", "Websites require READ_CONTACTS permission")
+    } catch (e: Exception) {
+        Log.w("ContactPicker", "Failed to read websites: ${e.message}")
+    }
+}
+}
+
+
+
+
+/*
+package com.mohamedbousalem.flutter_native_contact_picker_plus
+
+import android.app.Activity
+import android.content.Intent
+import android.database.Cursor
+import android.graphics.Bitmap
+import android.net.Uri
+import android.provider.ContactsContract
+import android.util.Base64
+import androidx.annotation.NonNull
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.MethodCall
+import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler
+import io.flutter.plugin.common.MethodChannel.Result
+import java.io.ByteArrayOutputStream
+
+class FlutterNativeContactPickerPlusPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
+    private lateinit var channel: MethodChannel
+    private var activity: Activity? = null
+    private var pendingResult: Result? = null
+    private var selectPhoneNumber: Boolean = false
+    private val PICK_CONTACT = 1
+
+    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_native_contact_picker_plus")
+        channel.setMethodCallHandler(this)
+    }
+
+    override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+        when (call.method) {
+            "selectContact" -> {
+                pendingResult = result
+                selectPhoneNumber = false
+                val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
+                try {
+                    activity?.startActivityForResult(intent, PICK_CONTACT)
+                } catch (e: Exception) {
+                    result.error("ERROR", "Failed to start contact picker: ${e.message}", null)
+                }
+            }
+            "selectPhoneNumber" -> {
+                pendingResult = result
+                selectPhoneNumber = true
+                val intent = Intent(Intent.ACTION_PICK).apply {
+                    type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
+                }
+                try {
+                    activity?.startActivityForResult(intent, PICK_CONTACT)
+                } catch (e: Exception) {
+                    result.error("ERROR", "Failed to start phone picker: ${e.message}", null)
+                }
+            }
+            "selectContacts" -> {
+                result.error("NOT_SUPPORTED", "Multiple contact selection is not supported on Android", null)
+            }
+            else -> {
+                result.notImplemented()
+            }
+        }
+    }
+
+    override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+        channel.setMethodCallHandler(null)
+    }
+
+    override fun onAttachedToActivity(@NonNull binding: ActivityPluginBinding) {
+        this.activity = binding.activity
+        binding.addActivityResultListener { requestCode, resultCode, data ->
+            if (requestCode == PICK_CONTACT) {
+                handleActivityResult(resultCode, data)
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    override fun onDetachedFromActivityForConfigChanges() {
+        this.activity = null
+    }
+
+    override fun onReattachedToActivityForConfigChanges(@NonNull binding: ActivityPluginBinding) {
+        this.activity = binding.activity
+        binding.addActivityResultListener { requestCode, resultCode, data ->
+            if (requestCode == PICK_CONTACT) {
+                handleActivityResult(resultCode, data)
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    override fun onDetachedFromActivity() {
+        this.activity = null
+    }
+
+    private fun handleActivityResult(resultCode: Int, data: Intent?) {
+        if (resultCode == Activity.RESULT_OK && data != null) {
+            val contactUri = data.data ?: run {
+                pendingResult?.error("ERROR", "No contact data returned", null)
+                pendingResult = null
+                return
+            }
+            val contact = mutableMapOf<String, Any?>()
+
+            if (selectPhoneNumber) {
+                // Handle phone number selection
+                activity?.contentResolver?.query(
+                    contactUri,
+                    arrayOf(
+                        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                        ContactsContract.CommonDataKinds.Phone.NUMBER
+                    ),
+                    null,
+                    null,
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        contact["fullName"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
+                        contact["selectedPhoneNumber"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                    }
+                }
+            } else {
+                // Handle full contact selection
+                val contactId: String? = activity?.contentResolver?.query(
+                    contactUri,
+                    arrayOf(ContactsContract.Contacts._ID, ContactsContract.Contacts.DISPLAY_NAME),
+                    null,
+                    null,
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        contact["fullName"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME))
+                        cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID))
+                    } else {
+                        null
+                    }
+                }
+
+                if (contactId == null) {
+                    pendingResult?.error("ERROR", "Failed to retrieve contact ID", null)
+                    pendingResult = null
+                    return
+                }
+
+                // Phone numbers
+                val phoneNumbers = mutableListOf<String>()
+                activity?.contentResolver?.query(
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
+                    "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+                    arrayOf(contactId),
+                    null
+                )?.use { cursor ->
+                    while (cursor.moveToNext()) {
+                        phoneNumbers.add(cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)) ?: "")
+                    }
+                }
+                contact["phoneNumbers"] = phoneNumbers
+
+                // Email addresses
+                val emailAddresses = mutableListOf<Map<String, String>>()
+                activity?.contentResolver?.query(
+                    ContactsContract.CommonDataKinds.Email.CONTENT_URI,
+                    arrayOf(
+                        ContactsContract.CommonDataKinds.Email.ADDRESS,
+                        ContactsContract.CommonDataKinds.Email.TYPE
+                    ),
+                    "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = ?",
+                    arrayOf(contactId),
+                    null
+                )?.use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val email = mutableMapOf<String, String>()
+                        email["email"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Email.ADDRESS)) ?: ""
+                        email["label"] = getEmailLabel(cursor.getInt(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Email.TYPE)))
+                        emailAddresses.add(email)
+                    }
+                }
+                contact["emailAddresses"] = emailAddresses
+
+                // Avatar
+                activity?.contentResolver?.query(
+                    ContactsContract.Data.CONTENT_URI,
+                    arrayOf(ContactsContract.CommonDataKinds.Photo.PHOTO),
+                    "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+                    arrayOf(contactId, ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE),
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val photoData = cursor.getBlob(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Photo.PHOTO))
+                        if (photoData != null) {
+                            val bitmap = android.graphics.BitmapFactory.decodeByteArray(photoData, 0, photoData.size)
+                            val stream = ByteArrayOutputStream()
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                            contact["avatar"] = Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT)
+                        }
+                    }
+                }
+
+                // Postal addresses
+                val postalAddresses = mutableListOf<Map<String, String>>()
+                activity?.contentResolver?.query(
+                    ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_URI,
+                    arrayOf(
+                        ContactsContract.CommonDataKinds.StructuredPostal.STREET,
+                        ContactsContract.CommonDataKinds.StructuredPostal.CITY,
+                        ContactsContract.CommonDataKinds.StructuredPostal.REGION,
+                        ContactsContract.CommonDataKinds.StructuredPostal.POSTCODE,
+                        ContactsContract.CommonDataKinds.StructuredPostal.COUNTRY,
+                        ContactsContract.CommonDataKinds.StructuredPostal.TYPE
+                    ),
+                    "${ContactsContract.CommonDataKinds.StructuredPostal.CONTACT_ID} = ?",
+                    arrayOf(contactId),
+                    null
+                )?.use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val address = mutableMapOf<String, String>()
+                        address["street"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.StructuredPostal.STREET)) ?: ""
+                        address["city"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.StructuredPostal.CITY)) ?: ""
+                        address["state"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.StructuredPostal.REGION)) ?: ""
+                        address["postalCode"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.StructuredPostal.POSTCODE)) ?: ""
+                        address["country"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.StructuredPostal.COUNTRY)) ?: ""
+                        address["label"] = getAddressLabel(cursor.getInt(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.StructuredPostal.TYPE)))
+                        postalAddresses.add(address)
+                    }
+                }
+                contact["postalAddresses"] = postalAddresses
+
+                // Organization
+                val organizationInfo = mutableMapOf<String, String>()
+                activity?.contentResolver?.query(
+                    ContactsContract.CommonDataKinds.Organization.CONTENT_URI,
+                    arrayOf(
+                        ContactsContract.CommonDataKinds.Organization.COMPANY,
+                        ContactsContract.CommonDataKinds.Organization.TITLE
+                    ),
+                    "${ContactsContract.CommonDataKinds.Organization.CONTACT_ID} = ?",
+                    arrayOf(contactId),
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        organizationInfo["company"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Organization.COMPANY)) ?: ""
+                        organizationInfo["jobTitle"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Organization.TITLE)) ?: ""
+                    }
+                }
+                if (organizationInfo.isNotEmpty()) {
+                    contact["organizationInfo"] = organizationInfo
+                }
+
+                // Birthday
+                activity?.contentResolver?.query(
+                    ContactsContract.Data.CONTENT_URI,
+                    arrayOf(ContactsContract.CommonDataKinds.Event.START_DATE),
+                    "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+                    arrayOf(contactId, ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE),
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        contact["birthday"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Event.START_DATE))
+                    }
+                }
+
+                // Notes
+                activity?.contentResolver?.query(
+                    ContactsContract.Data.CONTENT_URI,
+                    arrayOf(ContactsContract.CommonDataKinds.Note.NOTE),
+                    "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+                    arrayOf(contactId, ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE),
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        contact["notes"] = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Note.NOTE))
+                    }
+                }
+
+                // Website URLs
+                val websiteURLs = mutableListOf<String>()
+                activity?.contentResolver?.query(
+                    ContactsContract.Data.CONTENT_URI,
+                    arrayOf(ContactsContract.CommonDataKinds.Website.URL),
+                    "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ?",
+                    arrayOf(contactId, ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE),
+                    null
+                )?.use { cursor ->
+                    while (cursor.moveToNext()) {
+                        websiteURLs.add(cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Website.URL)) ?: "")
+                    }
+                }
+                contact["websiteURLs"] = websiteURLs
+            }
+
+            pendingResult?.success(contact)
+            pendingResult = null
+        } else if (resultCode == Activity.RESULT_CANCELED) {
+            pendingResult?.success(null)
+            pendingResult = null
+        } else {
+            pendingResult?.error("ERROR", "Failed to pick contact", null)
+            pendingResult = null
+        }
+    }
+
+    private fun getEmailLabel(type: Int): String {
+        return when (type) {
+            ContactsContract.CommonDataKinds.Email.TYPE_HOME -> "home"
+            ContactsContract.CommonDataKinds.Email.TYPE_WORK -> "work"
+            ContactsContract.CommonDataKinds.Email.TYPE_MOBILE -> "mobile"
+            ContactsContract.CommonDataKinds.Email.TYPE_OTHER -> "other"
+            else -> "custom"
+        }
+    }
+
+    private fun getAddressLabel(type: Int): String {
+        return when (type) {
+            ContactsContract.CommonDataKinds.StructuredPostal.TYPE_HOME -> "home"
+            ContactsContract.CommonDataKinds.StructuredPostal.TYPE_WORK -> "work"
+            ContactsContract.CommonDataKinds.StructuredPostal.TYPE_OTHER -> "other"
+            else -> "custom"
+        }
+    }
+}
+
+
+*/
+

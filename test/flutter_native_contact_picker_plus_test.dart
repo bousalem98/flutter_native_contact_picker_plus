@@ -1,3 +1,4 @@
+import 'package:flutter_native_contact_picker_plus/model/contact_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 //import 'package:flutter_native_contact_picker_plus/flutter_native_contact_picker_plus.dart';
 import 'package:flutter_native_contact_picker_plus/flutter_native_contact_picker_plus_platform_interface.dart';
@@ -9,6 +10,24 @@ class MockFlutterNativeContactPickerPlusPlatform
     implements FlutterNativeContactPickerPlusPlatform {
   @override
   Future<String?> getPlatformVersion() => Future.value('42');
+
+  @override
+  Future<Contact?> selectContact() {
+    //  implement selectContact
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<Contact>?> selectContacts() {
+    // implement selectContacts
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Contact?> selectPhoneNumber() {
+    // implement selectPhoneNumber
+    throw UnimplementedError();
+  }
 }
 
 void main() {
