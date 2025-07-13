@@ -50,7 +50,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_native_contact_picker_plus: ^1.0.0
+  flutter_native_contact_picker_plus: ^1.0.2
 ```
 
 ---
