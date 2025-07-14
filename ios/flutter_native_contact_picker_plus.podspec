@@ -13,7 +13,8 @@ An enhanced version of flutter_native_contact_picker for selecting contacts from
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Mohamed Salem Bousalem' => 'hkouma2011@gmail.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'flutter_native_contact_picker_plus/Sources/flutter_native_contact_picker_plus/**/*.swift'
+  s.resource_bundles = {'flutter_native_contact_picker_plus_privacy' => ['flutter_native_contact_picker_plus/Sources/flutter_native_contact_picker_plus/PrivacyInfo.xcprivacy']}
   s.dependency 'Flutter'
   s.platform = :ios, '12.0'
 
