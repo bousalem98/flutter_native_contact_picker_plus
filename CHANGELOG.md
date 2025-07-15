@@ -1,4 +1,4 @@
-## [1.1.0] - Swift Package Manager
+## [1.1.1] - Swift Package Manager
 
 - fix ios issues.
 - support the Swift package manager
