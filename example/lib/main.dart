@@ -45,11 +45,6 @@ class MyAppState extends State<MyApp> {
   List<Contact>? _contacts;
   bool _permissionGranted = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _checkPermission();
-  }
 
   Future<bool> checkPermission(Permission permission) async {
     PermissionStatus status = await permission.status;
@@ -80,12 +75,7 @@ class MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _checkPermission() async {
-    final hasPermission = await checkPermission(Permission.contacts);
-    setState(() {
-      _permissionGranted = hasPermission;
-    });
-  }
+
 
   void _showDeniedDialog() {
     showDialog(
@@ -114,12 +104,18 @@ class MyAppState extends State<MyApp> {
   // With permission checks
   Future<void> _selectSingleContactWithPermission() async {
     final hasPermission = await checkPermission(Permission.contacts);
+    setState(() {
+      _permissionGranted = hasPermission;
+    });
     if (!hasPermission) return;
     await _selectSingleContact();
   }
 
   Future<void> _selectMultipleContactsWithPermission() async {
     final hasPermission = await checkPermission(Permission.contacts);
+    setState(() {
+      _permissionGranted = hasPermission;
+    });
     if (!hasPermission) return;
     await _selectMultipleContacts();
   }
@@ -149,27 +145,28 @@ class MyAppState extends State<MyApp> {
           Contact? contact = await _contactPicker.selectContact();
           if (contact == null) break;
           contacts.add(contact);
-          
+
           final continueSelecting = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Add another contact?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('No'),
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Add another contact?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('No'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Yes'),
+                    ),
+                  ],
                 ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Yes'),
-                ),
-              ],
-            ),
-          ) ?? false;
-          
+              ) ??
+              false;
+
           if (!continueSelecting) break;
         }
-        
+
         setState(() {
           _contacts = contacts.isEmpty ? null : contacts;
         });
@@ -330,278 +327,285 @@ class MyAppState extends State<MyApp> {
     );
   }
 
- Widget _buildContactCard(Contact contact) {
-  return Card(
-    elevation: 4,
-    margin: const EdgeInsets.symmetric(vertical: 8.0),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(20.0),
+  Widget _buildContactCard(Contact contact) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Avatar and Name Section
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (contact.avatar != null)
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: MemoryImage(base64Decode(contact.avatar!)),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                if (contact.avatar == null)
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.indigo,
+                    ),
+                    child:
+                        const Icon(Icons.person, size: 40, color: Colors.white),
+                  ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        contact.fullName ?? 'Unknown Name',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (contact.organizationInfo?.jobTitle != null ||
+                          contact.organizationInfo?.company != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Text(
+                            [
+                              contact.organizationInfo?.jobTitle,
+                              contact.organizationInfo?.company
+                            ].where((e) => e != null).join(' at '),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Contact Information Sections
+            if (contact.phoneNumbers != null &&
+                contact.phoneNumbers!.isNotEmpty)
+              _buildSection(
+                Icons.phone,
+                'Phone Numbers',
+                contact.phoneNumbers!
+                    .map((number) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.phone, size: 24),
+                          title: Text(number),
+                          onTap: () => _launchPhoneCall(number),
+                        ))
+                    .toList(),
+              ),
+
+            if (contact.selectedPhoneNumber != null)
+              _buildSection(
+                Icons.phone_android,
+                'Selected Phone',
+                [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading:
+                        const Icon(Icons.star, color: Colors.amber, size: 24),
+                    title: Text(contact.selectedPhoneNumber!),
+                    onTap: () => _launchPhoneCall(contact.selectedPhoneNumber!),
+                  )
+                ],
+              ),
+
+            if (contact.emailAddresses != null &&
+                contact.emailAddresses!.isNotEmpty)
+              _buildSection(
+                Icons.email,
+                'Email Addresses',
+                contact.emailAddresses!
+                    .map((email) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.email, size: 24),
+                          title: Text(email.email ?? ''),
+                          subtitle:
+                              email.label != null ? Text(email.label!) : null,
+                          onTap: () => _launchEmail(email.email),
+                        ))
+                    .toList(),
+              ),
+
+            if (contact.postalAddresses != null &&
+                contact.postalAddresses!.isNotEmpty)
+              _buildSection(
+                Icons.location_on,
+                'Addresses',
+                contact.postalAddresses!
+                    .map((address) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.location_on, size: 24),
+                          title: Text(
+                            [
+                              address.street,
+                              address.city,
+                              address.state,
+                              address.postalCode,
+                              address.country
+                            ].where((e) => e != null).join(', '),
+                          ),
+                          subtitle: address.label != null
+                              ? Text(address.label!)
+                              : null,
+                          onTap: () => _launchMaps(address),
+                        ))
+                    .toList(),
+              ),
+
+            if (contact.organizationInfo != null &&
+                (contact.organizationInfo?.company != null ||
+                    contact.organizationInfo?.jobTitle != null))
+              _buildSection(
+                Icons.business,
+                'Organization',
+                [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.business, size: 24),
+                    title: Text(contact.organizationInfo?.company ?? ''),
+                    subtitle: contact.organizationInfo?.jobTitle != null
+                        ? Text(contact.organizationInfo!.jobTitle!)
+                        : null,
+                  )
+                ],
+              ),
+
+            if (contact.birthday != null)
+              _buildSection(
+                Icons.cake,
+                'Birthday',
+                [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.cake, size: 24),
+                    title: Text(contact.birthday!),
+                  )
+                ],
+              ),
+
+            if (contact.notes != null)
+              _buildSection(
+                Icons.notes,
+                'Notes',
+                [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.notes, size: 24),
+                    title: Text(contact.notes!),
+                  )
+                ],
+              ),
+
+            if (contact.websiteURLs != null && contact.websiteURLs!.isNotEmpty)
+              _buildSection(
+                Icons.link,
+                'Websites',
+                contact.websiteURLs!
+                    .map((url) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.link, size: 24),
+                          title: Text(url),
+                          onTap: () => _launchUrl(url),
+                        ))
+                    .toList(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+// Helper methods for actions
+  Future<void> _launchPhoneCall(String? phoneNumber) async {
+    if (phoneNumber == null) return;
+    final uri = Uri.parse('tel:$phoneNumber');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _launchEmail(String? email) async {
+    if (email == null) return;
+    final uri = Uri.parse('mailto:$email');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://$url';
+    }
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _launchMaps(PostalAddress address) async {
+    final query = [
+      address.street,
+      address.city,
+      address.state,
+      address.postalCode,
+      address.country
+    ].where((e) => e != null).join(', ');
+    final uri =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Widget _buildSection(IconData icon, String title, List<Widget> children) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar and Name Section
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (contact.avatar != null)
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: DecorationImage(
-                      image: MemoryImage(base64Decode(contact.avatar!)),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              if (contact.avatar == null)
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.indigo,
-                  ),
-                  child: const Icon(Icons.person, size: 40, color: Colors.white),
-                ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      contact.fullName ?? 'Unknown Name',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (contact.organizationInfo?.jobTitle != null ||
-                        contact.organizationInfo?.company != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          [contact.organizationInfo?.jobTitle, 
-                           contact.organizationInfo?.company]
-                              .where((e) => e != null)
-                              .join(' at '),
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                      ),
-                  ],
+              Icon(icon, size: 24, color: Colors.indigo),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-
-          // Contact Information Sections
-          if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty)
-            _buildSection(
-              Icons.phone,
-              'Phone Numbers',
-              contact.phoneNumbers!
-                  .map((number) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.phone, size: 24),
-                        title: Text(number),
-                        onTap: () => _launchPhoneCall(number),
-                      ))
-                  .toList(),
-            ),
-
-          if (contact.selectedPhoneNumber != null)
-            _buildSection(
-              Icons.phone_android,
-              'Selected Phone',
-              [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.star, color: Colors.amber, size: 24),
-                  title: Text(contact.selectedPhoneNumber!),
-                  onTap: () => _launchPhoneCall(contact.selectedPhoneNumber!),
-                )
-              ],
-            ),
-
-          if (contact.emailAddresses != null && contact.emailAddresses!.isNotEmpty)
-            _buildSection(
-              Icons.email,
-              'Email Addresses',
-              contact.emailAddresses!
-                  .map((email) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.email, size: 24),
-                        title: Text(email.email ?? ''),
-                        subtitle: email.label != null ? Text(email.label!) : null,
-                        onTap: () => _launchEmail(email.email),
-                      ))
-                  .toList(),
-            ),
-
-          if (contact.postalAddresses != null && contact.postalAddresses!.isNotEmpty)
-            _buildSection(
-              Icons.location_on,
-              'Addresses',
-              contact.postalAddresses!
-                  .map((address) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.location_on, size: 24),
-                        title: Text(
-                          [
-                            address.street,
-                            address.city,
-                            address.state,
-                            address.postalCode,
-                            address.country
-                          ].where((e) => e != null).join(', '),
-                        ),
-                        subtitle: address.label != null ? Text(address.label!) : null,
-                        onTap: () => _launchMaps(address),
-                      ))
-                  .toList(),
-            ),
-
-          if (contact.organizationInfo != null &&
-              (contact.organizationInfo?.company != null ||
-                  contact.organizationInfo?.jobTitle != null))
-            _buildSection(
-              Icons.business,
-              'Organization',
-              [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.business, size: 24),
-                  title: Text(contact.organizationInfo?.company ?? ''),
-                  subtitle:
-                      contact.organizationInfo?.jobTitle != null
-                          ? Text(contact.organizationInfo!.jobTitle!)
-                          : null,
-                )
-              ],
-            ),
-
-          if (contact.birthday != null)
-            _buildSection(
-              Icons.cake,
-              'Birthday',
-              [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.cake, size: 24),
-                  title: Text(contact.birthday!),
-                )
-              ],
-            ),
-
-          if (contact.notes != null)
-            _buildSection(
-              Icons.notes,
-              'Notes',
-              [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.notes, size: 24),
-                  title: Text(contact.notes!),
-                )
-              ],
-            ),
-
-          if (contact.websiteURLs != null && contact.websiteURLs!.isNotEmpty)
-            _buildSection(
-              Icons.link,
-              'Websites',
-              contact.websiteURLs!
-                  .map((url) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.link, size: 24),
-                        title: Text(url),
-                        onTap: () => _launchUrl(url),
-                      ))
-                  .toList(),
-            ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 32.0),
+            child: Column(children: children),
+          ),
+          const Divider(height: 24),
         ],
       ),
-    ),
-  );
-}
-
-// Helper methods for actions
-Future<void> _launchPhoneCall(String? phoneNumber) async {
-  if (phoneNumber == null) return;
-  final uri = Uri.parse('tel:$phoneNumber');
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
+    );
   }
-}
-
-Future<void> _launchEmail(String? email) async {
-  if (email == null) return;
-  final uri = Uri.parse('mailto:$email');
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
-  }
-}
-
-Future<void> _launchUrl(String url) async {
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://$url';
-  }
-  final uri = Uri.parse(url);
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
-  }
-}
-
-Future<void> _launchMaps(PostalAddress address) async {
-  final query = [
-    address.street,
-    address.city,
-    address.state,
-    address.postalCode,
-    address.country
-  ].where((e) => e != null).join(', ');
-  final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
-  }
-}
-
-Widget _buildSection(IconData icon, String title, List<Widget> children) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 24, color: Colors.indigo),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.only(left: 32.0),
-          child: Column(children: children),
-        ),
-        const Divider(height: 24),
-      ],
-    ),
-  );
-}
-
 }

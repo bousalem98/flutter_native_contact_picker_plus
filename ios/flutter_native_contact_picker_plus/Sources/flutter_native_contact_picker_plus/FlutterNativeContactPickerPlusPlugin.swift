@@ -125,7 +125,6 @@ class SinglePickerHandler: PickerHandler {
     }
 }
 
-@available(iOS 9.0, *)
 class PhonePickerHandler: PickerHandler {
     @available(iOS 9.0, *)
     func contactPicker(
@@ -164,7 +163,6 @@ class PhonePickerHandler: PickerHandler {
     }
 }
 
-@available(iOS 9.0, *)
 class MultiPickerHandler: PickerHandler {
     @available(iOS 9.0, *)
     func contactPicker(_ picker: CNContactPickerViewController, didSelect contacts: [CNContact]) {
@@ -175,8 +173,7 @@ class MultiPickerHandler: PickerHandler {
     }
 }
 
-@objc(FlutterNativeContactPickerPlusPlugin)
-public class SwiftFlutterNativeContactPickerPlusPlugin: NSObject, FlutterPlugin {
+public class FlutterNativeContactPickerPlusPlugin: NSObject, FlutterPlugin {
     private var delegate: PickerHandler?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -184,7 +181,7 @@ public class SwiftFlutterNativeContactPickerPlusPlugin: NSObject, FlutterPlugin 
             name: "flutter_native_contact_picker_plus",
             binaryMessenger: registrar.messenger()
         )
-        let instance = SwiftFlutterNativeContactPickerPlusPlugin()
+        let instance = FlutterNativeContactPickerPlusPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
 

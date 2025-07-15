@@ -4,8 +4,7 @@ import PackageDescription
 let package = Package(
     name: "flutter_native_contact_picker_plus",
     platforms: [
-        .iOS("12.0"),
-        .macOS("10.14"),
+        .iOS("12.0")
     ],
     products: [
         .library(
@@ -13,21 +12,22 @@ let package = Package(
             targets: ["flutter_native_contact_picker_plus"]
         )
     ],
+    dependencies: [],
     targets: [
         .target(
-            name: "ObjCPart",
-            path: "Sources/ObjCPart",
-            publicHeadersPath: "."
-        ),
-        .target(
             name: "flutter_native_contact_picker_plus",
-            dependencies: ["ObjCPart"],
-            path: "Sources/flutter_native_contact_picker_plus",
+            dependencies: [],
             resources: [
+                // TODO: If your plugin requires a privacy manifest
+                // (e.g. if it uses any required reason APIs), update the PrivacyInfo.xcprivacy file
+                // to describe your plugin's privacy impact, and then uncomment this line.
+                // For more information, see:
+                // https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
                 .process("PrivacyInfo.xcprivacy")
-            ],
-            swiftSettings: [
-                .unsafeFlags(["-import-objc-header", "include/FlutterNativeContactPickerPlus-Bridging-Header.h"])
+
+                // TODO: If you have other resources that need to be bundled with your plugin, refer to
+                // the following instructions to add them:
+                // https://developer.apple.com/documentation/xcode/bundling-resources-with-a-swift-package
             ]
         )
     ]

@@ -1,20 +1,24 @@
-# Flutter Native Contact Picker Plus
+# 📇 Flutter Native Contact Picker Plus
 
 [![pub package](https://img.shields.io/pub/v/flutter_native_contact_picker_plus.svg)](https://pub.dev/packages/flutter_native_contact_picker_plus)
 [![license](https://img.shields.io/badge/license-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-An enhanced Flutter plugin that provides native UI to select contacts with comprehensive contact details, built on top of the original `flutter_native_contact_picker` with additional features and fields.
+An enhanced Flutter plugin that provides **native UI to select contacts with rich, extended contact details**. Built on top of the original [`flutter_native_contact_picker`](https://pub.dev/packages/flutter_native_contact_picker), this version supports additional fields like email addresses, avatars, organization info, notes, and more — with graceful permission handling.
+
+---
 
 ## ✨ Features
 
-- **No permissions required** for basic contact information (name and phone numbers)
-- **Native UI** for both Android and iOS
-- **Comprehensive contact details** including emails, addresses, organization info, and more
-- **Multiple selection modes**:
+- ✅ No permissions required for basic info (name & phone numbers)
+- 📱 Native contact picker UI for Android and iOS
+- 📥 Extended contact fields (emails, avatars, addresses, etc.)
+- 🔁 Multiple selection modes:
   - Single contact selection
-  - Multiple contact selection (iOS only)
+  - Multiple contacts (iOS only)
   - Specific phone number selection
-- **Graceful permission handling** - works even when permissions are denied
+- 🔒 Graceful fallback when permission is denied
+
+---
 
 ## 📋 Supported Platforms
 
@@ -25,47 +29,105 @@ An enhanced Flutter plugin that provides native UI to select contacts with compr
 | Phone number selection     |   ✅    | ✅  |
 | Extended contact fields    |   ✅    | ✅  |
 
-## 📋 Supported Contact Fields
+---
 
-| Field                 | Type                   | Permission Required | Notes                                        |
-| --------------------- | ---------------------- | ------------------- | -------------------------------------------- |
-| `fullName`            | `String?`              | ❌                  | Always available                             |
-| `phoneNumbers`        | `List<String>?`        | ❌                  | All phone numbers attached to the contact    |
-| `selectedPhoneNumber` | `String?`              | ❌                  | Used only in `selectPhoneNumber()`           |
-| `emailAddresses`      | `List<EmailAddress>?`  | ✅                  | Email + label; permission needed to retrieve |
-| `avatar`              | `String? (base64)`     | ✅                  | Base64-encoded avatar image                  |
-| `postalAddresses`     | `List<PostalAddress>?` | ✅                  | Full address info with label                 |
-| `organizationInfo`    | `OrganizationInfo?`    | ✅                  | Includes company and job title               |
-| `birthday`            | `String?` (ISO 8601)   | ✅                  | Example: `1994-11-12`                        |
-| `notes`               | `String?`              | ✅                  | User-provided notes                          |
-| `websiteURLs`         | `List<String>?`        | ✅ (Android only)   | List of associated websites                  |
+## 📦 Supported Contact Fields
 
-> ℹ️ If access is denied by the user, only basic fields (`fullName`, `phoneNumbers`) are returned. The plugin will not crash or throw.
+| Field                 | Type                   | Requires Permission | Notes                                         |
+| --------------------- | ---------------------- | ------------------- | --------------------------------------------- |
+| `fullName`            | `String?`              | ❌                  | Always available                              |
+| `phoneNumbers`        | `List<String>?`        | ❌                  | All numbers linked to contact                 |
+| `selectedPhoneNumber` | `String?`              | ❌                  | Only in `selectPhoneNumber()`                |
+| `emailAddresses`      | `List<EmailAddress>?`  | ✅                  | With label (e.g., work, personal)             |
+| `avatar`              | `String? (base64)`     | ✅                  | Base64-encoded contact photo                  |
+| `postalAddresses`     | `List<PostalAddress>?` | ✅                  | Full address info with label                  |
+| `organizationInfo`    | `OrganizationInfo?`    | ✅                  | Company + job title                           |
+| `birthday`            | `String? (ISO 8601)`   | ✅                  | Example: `1994-11-12`                         |
+| `notes`               | `String?`              | ✅                  | User-entered notes                            |
+| `websiteURLs`         | `List<String>?`        | ✅ (Android only)   | List of websites linked to the contact        |
+
+> ℹ️ If permissions are denied, the plugin falls back to basic fields only (`fullName`, `phoneNumbers`) **without crashing**.
 
 ---
 
-## 📦 Installation
+## ⚙️ Permissions and Setup
 
-Add this to your `pubspec.yaml`:
+### 🟢 Android
+
+#### 🔐 Required Permission
+
+Add to your `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<uses-permission android:name="android.permission.READ_CONTACTS" />
+```
+
+#### 📦 Optional Runtime Permission Handling
+
+Add `permission_handler` to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_native_contact_picker_plus: ^1.0.2
+  permission_handler: ^10.2.0
+```
+
+Example usage:
+
+```dart
+import 'package:permission_handler/permission_handler.dart';
+
+Future<void> requestContactPermission() async {
+  var status = await Permission.contacts.request();
+  if (status.isGranted) {
+    // Permission granted
+  } else {
+    // Permission denied
+  }
+}
 ```
 
 ---
 
-## ⚙️ Permissions
+### 🍎 iOS
 
-| Platform | Permission                         | Required For                                                                                         |
-| -------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Android  | `android.permission.READ_CONTACTS` | Required for accessing email, avatar, postal addresses, organization info, birthday, notes, websites |
-| iOS      | `NSContactsUsageDescription`       | Required for accessing email, avatar, postal addresses, organization info, birthday, notes, websites |
+#### 📄 Info.plist
 
-> **Note:**
->
-> - Basic fields like `fullName`, `phoneNumbers`, and `selectedPhoneNumber` can be accessed **without any permission** when using the native contact picker UI.
-> - Access to other detailed fields requires user permission and may be denied gracefully.
+Add usage description to `ios/Runner/Info.plist`:
+
+```xml
+<key>NSContactsUsageDescription</key>
+<string>This app requires access to contacts to allow selecting and displaying contact information.</string>
+```
+
+#### ⚙️ Podfile Update
+
+Inside `target 'Runner' do` block of your `ios/Podfile`, add:
+
+```ruby
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_CONTACTS=1'
+      ]
+    end
+  end
+end
+```
+
+#### 📦 Optional Runtime Permission Handling
+
+Same as Android — refer to the example in the Android section.
+
+---
+
+### 📝 Notes
+
+- ✅ Basic fields work even without permission.
+- 🔐 Extended fields require user consent.
+- ❌ If permissions are denied, the plugin doesn’t crash.
+- 📱 Always test permission flows on **real devices**.
 
 ---
 
@@ -73,55 +135,47 @@ dependencies:
 
 ### Contact
 
-Represents a contact selected by the user.
-
-| Property              | Type                   | Description                                      |
-| --------------------- | ---------------------- | ------------------------------------------------ |
-| `fullName`            | `String?`              | Contact's full name                              |
-| `phoneNumbers`        | `List<String>?`        | All phone numbers attached to the contact        |
-| `selectedPhoneNumber` | `String?`              | The phone number selected specifically (if any)  |
-| `emailAddresses`      | `List<EmailAddress>?`  | List of email addresses with labels              |
-| `avatar`              | `String?`              | Base64-encoded avatar image (nullable)           |
-| `postalAddresses`     | `List<PostalAddress>?` | List of postal addresses with labels             |
-| `organizationInfo`    | `OrganizationInfo?`    | Company and job title info                       |
-| `birthday`            | `String?`              | Birthday in ISO 8601 format (e.g., `1994-11-12`) |
-| `notes`               | `String?`              | User notes                                       |
-| `websiteURLs`         | `List<String>?`        | List of website URLs                             |
+| Property              | Type                   | Description                                  |
+| --------------------- | ---------------------- | -------------------------------------------- |
+| `fullName`            | `String?`              | Contact name                                 |
+| `phoneNumbers`        | `List<String>?`        | All contact phone numbers                    |
+| `selectedPhoneNumber` | `String?`              | Selected number via `selectPhoneNumber()`    |
+| `emailAddresses`      | `List<EmailAddress>?`  | Email addresses with labels                  |
+| `avatar`              | `String?`              | Base64 avatar image                          |
+| `postalAddresses`     | `List<PostalAddress>?` | Address list with labels                     |
+| `organizationInfo`    | `OrganizationInfo?`    | Company and job title                        |
+| `birthday`            | `String?`              | ISO-8601 formatted birthday                  |
+| `notes`               | `String?`              | User notes                                   |
+| `websiteURLs`         | `List<String>?`        | Contact websites                             |
 
 ### EmailAddress
 
-Represents an email address with a label.
-
-| Property | Type      | Description          |
-| -------- | --------- | -------------------- |
-| `email`  | `String?` | Email address        |
-| `label`  | `String?` | Label (e.g., "home") |
+| Property | Type      | Description      |
+| -------- | --------- | ---------------- |
+| `email`  | `String?` | Email address    |
+| `label`  | `String?` | e.g., "home"     |
 
 ### PostalAddress
 
-Represents a postal address.
-
-| Property     | Type      | Description          |
-| ------------ | --------- | -------------------- |
-| `street`     | `String?` | Street address       |
-| `city`       | `String?` | City                 |
-| `state`      | `String?` | State                |
-| `postalCode` | `String?` | Postal code          |
-| `country`    | `String?` | Country              |
-| `label`      | `String?` | Label (e.g., "work") |
+| Property     | Type      | Description    |
+| ------------ | --------- | -------------- |
+| `street`     | `String?` | Street name    |
+| `city`       | `String?` | City           |
+| `state`      | `String?` | State          |
+| `postalCode` | `String?` | Postal code    |
+| `country`    | `String?` | Country name   |
+| `label`      | `String?` | e.g., "work"   |
 
 ### OrganizationInfo
 
-Represents organization information.
-
-| Property   | Type      | Description  |
-| ---------- | --------- | ------------ |
-| `company`  | `String?` | Company name |
-| `jobTitle` | `String?` | Job title    |
+| Property   | Type      | Description     |
+| ---------- | --------- | --------------- |
+| `company`  | `String?` | Company name    |
+| `jobTitle` | `String?` | Job title       |
 
 ---
 
-### Example
+## 🧪 Example
 
 ```dart
 void main() {
@@ -250,12 +304,11 @@ class MyAppState extends State<MyApp> {
     );
   }
 }
-
 ```
 
 Also, for whole example, check out the **example** app in the [example](https://github.com/bousalem98/flutter_native_contact_picker_plus/tree/main/example) directory or the 'Example' tab on pub.dartlang.org for a more complete example.
 
-## Main Contributors
+## 👥 Contributors
 
 <table>
   <tr>
@@ -271,6 +324,7 @@ Also, for whole example, check out the **example** app in the [example](https://
 BSD 3-Clause License
 
 Copyright (c) 2020, Jayesh Pansheriya
+Copyright (c) 2025, Mohamed Salem Bousalem
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
