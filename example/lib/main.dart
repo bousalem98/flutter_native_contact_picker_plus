@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -48,7 +50,7 @@ class MyAppState extends State<MyApp> {
 
   Future<bool> checkPermission(Permission permission) async {
     PermissionStatus status = await permission.status;
-    print(status);
+    debugPrint(status.toString());
     switch (status) {
       case PermissionStatus.denied:
         var result = await permission.request();
