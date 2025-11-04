@@ -1,9 +1,46 @@
-## [1.2.0] - Patch
+## [1.2.0] - Major Android Stability Patch
 
-- Fix Issue Caused by java.lang.IllegalStateException Couldn't read row 0, col -1 from CursorWindow. Make sure the Cursor is initialized correctly before accessing data from it. (https://github.com/bousalem98/flutter_native_contact_picker_plus/issues/2)
-- Update Android Gradle plugin to 8.13.0
-- Android build: compileSdkVersion 36, minSdk 21
-- Explicit mobile, work, home phone number properties to contact, Thanks [@StephenOelofsePropMe](https://github.com/bousalem98/flutter_native_contact_picker_plus/pull/1)
+### 🧩 Fixes & Improvements
+- 🛠 **Fixed critical crash** caused by  
+  `java.lang.IllegalStateException: Couldn't read row 0, col -1 from CursorWindow`  
+  This issue occurred when certain contact columns (like `PHOTO_URI` or `LOOKUP_KEY`) were missing from the query projection.  
+  ✅ Resolved by adding safe column index handling across all cursor lookups.  
+  ([#2](https://github.com/bousalem98/flutter_native_contact_picker_plus/issues/2) — thanks [@zjJunZhu](https://github.com/zjJunZhu))
+
+- ☎️ **Added explicit phone type mapping** — `home`, `mobile`, `work`, and `other`  
+  to make phone number fields more descriptive and consistent across Android devices.  
+  Thanks [@StephenOelofsePropMe](https://github.com/StephenOelofsePropMe) for the contribution!  
+  ([#1](https://github.com/bousalem98/flutter_native_contact_picker_plus/pull/1))
+
+- 🚀 **Improved Android data safety:**  
+  - Added helper methods `getStringSafe()` and `getIntSafe()` to prevent invalid cursor reads.  
+  - Ensures compatibility across various OEM contact providers (Samsung, Xiaomi, Huawei, etc.).
+
+- 🧠 **Code cleanup & refactoring:**  
+  - Streamlined `onActivityResult()` with safer cursor handling.  
+  - Improved error logs and fallback handling for missing contact data.
+
+---
+
+### ⚙️ Build Configuration Updates
+- 📱 **compileSdkVersion:** 36  
+- 📱 **minSdkVersion:** 21  
+- ⚙️ **Android Gradle Plugin:** 8.13.0  
+- 🔒 Enforced latest AndroidX and Kotlin compatibility.
+
+---
+
+### 🔮 Coming Soon (v2.0.0 Roadmap)
+- Smart permission layer with auto-request fallback  
+- Developer-selectable contact fields (e.g. name, email, avatar)  
+- Unified address & organization data model  
+- vCard export/import and live contact change listener  
+
+---
+
+**Thanks to all contributors! 🙌**  
+`flutter_native_contact_picker_plus` is now safer, faster, and more reliable on Android.
+
 
 ## [1.1.1] - Swift Package Manager
 

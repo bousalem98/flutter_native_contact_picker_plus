@@ -97,29 +97,40 @@ override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?):
         cursor?.use {
             if (it.moveToFirst()) {
                 val contact = HashMap<String, Any?>()
-                
-                // Basic info available without permissions
-                val contactId = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID))
-                val lookupKey = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.LOOKUP_KEY))
-                val fullName = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
-                val number = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
-                val photoUri = it.getString(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI))
-                val phoneType = it.getInt(it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE))
-                
+
+                // Safe helper
+                fun getStringSafe(cursor: android.database.Cursor, column: String): String? {
+                    val index = cursor.getColumnIndex(column)
+                    return if (index >= 0) cursor.getString(index) else null
+                }
+                fun getIntSafe(cursor: android.database.Cursor, column: String): Int? {
+                    val index = cursor.getColumnIndex(column)
+                    return if (index >= 0) cursor.getInt(index) else null
+                }
+
+                val contactId = getStringSafe(it, ContactsContract.CommonDataKinds.Phone.CONTACT_ID)
+                val lookupKey = getStringSafe(it, ContactsContract.CommonDataKinds.Phone.LOOKUP_KEY)
+                val fullName = getStringSafe(it, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val number = getStringSafe(it, ContactsContract.CommonDataKinds.Phone.NUMBER)
+                val photoUri = getStringSafe(it, ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
+                val phoneType = getIntSafe(it, ContactsContract.CommonDataKinds.Phone.TYPE) ?: -1
+
                 contact.apply {
                     put("fullName", fullName)
                     put("selectedPhoneNumber", number)
-                    put("phoneNumbers", listOf(number))
+                    put("phoneNumbers", listOfNotNull(number))
                     put("contactId", contactId)
                     put("lookupKey", lookupKey)
-                    put("phoneType", when (phoneType) {
-                        ContactsContract.CommonDataKinds.Phone.TYPE_HOME -> "home"
-                        ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE -> "mobile"
-                        ContactsContract.CommonDataKinds.Phone.TYPE_WORK -> "work"
-                        else -> "other"
-                    })
+                    put(
+                        "phoneType", when (phoneType) {
+                            ContactsContract.CommonDataKinds.Phone.TYPE_HOME -> "home"
+                            ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE -> "mobile"
+                            ContactsContract.CommonDataKinds.Phone.TYPE_WORK -> "work"
+                            else -> "other"
+                        }
+                    )
 
-                    // Initialize all fields with default values
+                    // Default empty fields
                     put("emailAddresses", emptyList<Map<String, String>>())
                     put("postalAddresses", emptyList<Map<String, String>>())
                     put("homePhoneNumber", null)
@@ -132,21 +143,19 @@ override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?):
                     put("avatar", null)
                 }
 
-                // Handle photo separately since it requires URI permission
                 if (photoUri != null) {
                     try {
                         activity?.contentResolver?.openInputStream(Uri.parse(photoUri))?.use { stream ->
                             val bytes = stream.readBytes()
-                        contact["avatar"] = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                            contact["avatar"] =
+                                android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
                         }
-                    } catch (e: SecurityException) {
-                        Log.w("ContactPicker", "Avatar requires READ_CONTACTS permission")
                     } catch (e: Exception) {
                         Log.w("ContactPicker", "Failed to read avatar: ${e.message}")
                     }
                 }
 
-                // Process each field with individual try-catch
+                // Continue with other processing
                 processEmails(contact, contactId)
                 processAddresses(contact, contactId)
                 processPhoneNumbers(contact, contactId)
@@ -154,7 +163,7 @@ override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?):
                 processBirthday(contact, contactId)
                 processNotes(contact, contactId)
                 processWebsites(contact, contactId)
-                
+
                 pendingResult?.success(contact)
             } else {
                 pendingResult?.success(null)
@@ -163,6 +172,7 @@ override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?):
             return true
         }
     }
+
 
     pendingResult?.success(null)
     pendingResult = null

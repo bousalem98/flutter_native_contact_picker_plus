@@ -47,7 +47,6 @@ class MyAppState extends State<MyApp> {
   List<Contact>? _contacts;
   bool _permissionGranted = false;
 
-
   Future<bool> checkPermission(Permission permission) async {
     PermissionStatus status = await permission.status;
     debugPrint(status.toString());
@@ -76,8 +75,6 @@ class MyAppState extends State<MyApp> {
         return false;
     }
   }
-
-
 
   void _showDeniedDialog() {
     showDialog(
