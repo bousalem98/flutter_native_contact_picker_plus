@@ -1,4 +1,4 @@
-## [1.2.0] - Major Android Stability Patch
+## [1.2.1] - Major Android Stability Patch
 
 ### 🧩 Fixes & Improvements
 - 🛠 **Fixed critical crash** caused by  

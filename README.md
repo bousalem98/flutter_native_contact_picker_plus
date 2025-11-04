@@ -6,22 +6,6 @@
 An enhanced Flutter plugin that provides **native UI to select contacts with rich, extended contact details**. Built on top of the original [`flutter_native_contact_picker`](https://pub.dev/packages/flutter_native_contact_picker), this version supports additional fields like email addresses, avatars, organization info, notes, and more — with graceful permission handling.
 
 
----
-
-## ✨ What's New in v2.0.0
-
-| Feature | Description |
-| -------- | ------------ |
-| 🧠 **Smart Permission Layer** | Automatically requests runtime `READ_CONTACTS` access (Android) or `CNContactStore` access (iOS). |
-| 🧩 **Field Selection API** | Developers can now specify which contact fields to fetch — for privacy and speed. |
-| 🛡 **Safe Cursor Handling** | Fixes `IllegalStateException: Couldn't read row 0, col -1` crash on Android. |
-| 🚀 **Cross-Platform Parity** | Unified contact field structure and safer permission fallback for iOS. |
-
----
-
-
----
-
 ## ✨ Features
 
 - ✅ No permissions required for basic info (name & phone numbers)
