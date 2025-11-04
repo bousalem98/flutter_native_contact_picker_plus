@@ -414,7 +414,48 @@ class MyAppState extends State<MyApp> {
                         ))
                     .toList(),
               ),
-
+            if (contact.workPhoneNumber != null)
+              _buildSection(
+                Icons.phone_android,
+                'Work Phone Number',
+                [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading:
+                        const Icon(Icons.star, color: Colors.amber, size: 24),
+                    title: Text(contact.workPhoneNumber!),
+                    onTap: () => _launchPhoneCall(contact.workPhoneNumber!),
+                  )
+                ],
+              ),
+            if (contact.homePhoneNumber != null)
+              _buildSection(
+                Icons.phone_android,
+                'Home Phone Number',
+                [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading:
+                        const Icon(Icons.star, color: Colors.amber, size: 24),
+                    title: Text(contact.homePhoneNumber!),
+                    onTap: () => _launchPhoneCall(contact.homePhoneNumber!),
+                  )
+                ],
+              ),
+            if (contact.mobilePhoneNumber != null)
+              _buildSection(
+                Icons.phone_android,
+                'Mobile Phone Number',
+                [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading:
+                        const Icon(Icons.star, color: Colors.amber, size: 24),
+                    title: Text(contact.mobilePhoneNumber!),
+                    onTap: () => _launchPhoneCall(contact.mobilePhoneNumber!),
+                  )
+                ],
+              ),
             if (contact.selectedPhoneNumber != null)
               _buildSection(
                 Icons.phone_android,
