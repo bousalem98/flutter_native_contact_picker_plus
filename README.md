@@ -140,6 +140,9 @@ Same as Android — refer to the example in the Android section.
 | `fullName`            | `String?`              | Contact name                                 |
 | `phoneNumbers`        | `List<String>?`        | All contact phone numbers                    |
 | `selectedPhoneNumber` | `String?`              | Selected number via `selectPhoneNumber()`    |
+| `mobilePhoneNumber`   | `String?`              | Mobile phone number                          |
+| `workPhoneNumber`     | `String?`              | Work phone number                            |
+| `homePhoneNumber`     | `String?`              | Home phone number                            |
 | `emailAddresses`      | `List<EmailAddress>?`  | Email addresses with labels                  |
 | `avatar`              | `String?`              | Base64 avatar image                          |
 | `postalAddresses`     | `List<PostalAddress>?` | Address list with labels                     |

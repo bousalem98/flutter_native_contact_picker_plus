@@ -51,6 +51,28 @@ class SinglePickerHandler: PickerHandler {
         data["contactId"] = contact.identifier
         data["lookupKey"] = contact.identifier
 
+        // Initialize phone number fields with nil
+        data["homePhoneNumber"] = nil
+        data["mobilePhoneNumber"] = nil
+        data["workPhoneNumber"] = nil
+
+        // Process phone numbers into separate properties
+        for phoneNumber in contact.phoneNumbers {
+            let number = phoneNumber.value.stringValue
+            let label = phoneNumber.label
+
+            switch label {
+            case CNLabelHome:
+                if data["homePhoneNumber"] == nil { data["homePhoneNumber"] = number }
+            case CNLabelPhoneNumberiPhone, CNLabelPhoneNumberMobile:
+                if data["mobilePhoneNumber"] == nil { data["mobilePhoneNumber"] = number }
+            case CNLabelPhoneNumberMain, CNLabelWork:
+                if data["workPhoneNumber"] == nil { data["workPhoneNumber"] = number }
+            default:
+                break
+            }
+        }
+
         // Get all phone numbers
         let phoneNumbers = contact.phoneNumbers.compactMap { $0.value.stringValue }
         data["phoneNumbers"] = phoneNumbers

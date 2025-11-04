@@ -118,10 +118,13 @@ override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?):
                         ContactsContract.CommonDataKinds.Phone.TYPE_WORK -> "work"
                         else -> "other"
                     })
-                    
+
                     // Initialize all fields with default values
                     put("emailAddresses", emptyList<Map<String, String>>())
                     put("postalAddresses", emptyList<Map<String, String>>())
+                    put("homePhoneNumber", null)
+                    put("mobilePhoneNumber", null)
+                    put("workPhoneNumber", null)
                     put("websiteURLs", emptyList<String>())
                     put("organizationInfo", null)
                     put("birthday", null)
@@ -146,6 +149,7 @@ override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?):
                 // Process each field with individual try-catch
                 processEmails(contact, contactId)
                 processAddresses(contact, contactId)
+                processPhoneNumbers(contact, contactId)
                 processOrganization(contact, contactId)
                 processBirthday(contact, contactId)
                 processNotes(contact, contactId)
@@ -352,4 +356,44 @@ private fun processWebsites(contact: HashMap<String, Any?>, contactId: String?) 
         Log.w("ContactPicker", "Failed to read websites: ${e.message}")
     }
 }
+
+private fun processPhoneNumbers(contact: HashMap<String, Any?>, contactId: String?) {
+    try {
+        activity?.contentResolver?.query(
+            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            arrayOf(
+                ContactsContract.CommonDataKinds.Phone.NUMBER,
+                ContactsContract.CommonDataKinds.Phone.TYPE
+            ),
+            "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+            arrayOf(contactId),
+            null
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Phone.NUMBER))
+                val phoneType = cursor.getInt(cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Phone.TYPE))
+                
+                when (phoneType) {
+                    ContactsContract.CommonDataKinds.Phone.TYPE_HOME -> {
+                        if (contact["homePhoneNumber"] == null) contact["homePhoneNumber"] = phoneNumber
+                    }
+                    ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE -> {
+                        if (contact["mobilePhoneNumber"] == null) contact["mobilePhoneNumber"] = phoneNumber
+                    }
+                    ContactsContract.CommonDataKinds.Phone.TYPE_WORK -> {
+                        if (contact["workPhoneNumber"] == null) contact["workPhoneNumber"] = phoneNumber
+                    }
+                }
+            }
+        }
+    } catch (e: SecurityException) {
+        Log.w("ContactPicker", "Phone numbers require READ_CONTACTS permission")
+    } catch (e: Exception) {
+        Log.w("ContactPicker", "Failed to read phone numbers: ${e.message}")
+    }
+}
+
+
 }
