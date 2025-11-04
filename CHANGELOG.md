@@ -1,3 +1,10 @@
+## [1.2.0] - Patch
+
+- Fix Issue Caused by java.lang.IllegalStateException Couldn't read row 0, col -1 from CursorWindow. Make sure the Cursor is initialized correctly before accessing data from it. (https://github.com/bousalem98/flutter_native_contact_picker_plus/issues/2)
+- Update Android Gradle plugin to 8.13.0
+- Android build: compileSdkVersion 36, minSdk 21
+- Explicit mobile, work, home phone number properties to contact, Thanks [@StephenOelofsePropMe](https://github.com/bousalem98/flutter_native_contact_picker_plus/pull/1)
+
 ## [1.1.1] - Swift Package Manager
 
 - fix ios issues.

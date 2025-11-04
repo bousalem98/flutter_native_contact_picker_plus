@@ -1,6 +1,6 @@
 name: flutter_native_contact_picker_plus
 description: An enhanced version of flutter_native_contact_picker for selecting contacts from the address book.
-version: 1.1.1
+version: 1.2.0
 #author: Jayesh Pansheriya <pansheriyajayesh@gmail.com> and mohamed salem bousalem <hkouma2011@gmail.com>
 homepage: https://github.com/bousalem98/flutter_native_contact_picker_plus
 
@@ -16,7 +16,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
