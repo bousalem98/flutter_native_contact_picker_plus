@@ -50,8 +50,6 @@
 - fix ios issues.
 - support the Swift package manager
 
----
-
 ## [1.0.0] - Major Update
 
 ### 🚀 New Features
@@ -84,13 +82,9 @@
 - Graceful fallback when permissions are denied (fields return `null` or empty).
 - Updated Android and iOS implementations for better compatibility.
 
----
-
 ## [0.0.2] - Patch
 
 - Fixed iOS issues.
-
----
 
 ## [0.0.1] - Initial Release
 
