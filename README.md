@@ -5,7 +5,6 @@
 
 An enhanced Flutter plugin that provides **native UI to select contacts with rich, extended contact details**. Built on top of the original [`flutter_native_contact_picker`](https://pub.dev/packages/flutter_native_contact_picker), this version supports additional fields like email addresses, avatars, organization info, notes, and more — with graceful permission handling.
 
-
 ## ✨ Features
 
 - ✅ No permissions required for basic info (name & phone numbers)
@@ -32,18 +31,18 @@ An enhanced Flutter plugin that provides **native UI to select contacts with ric
 
 ## 📦 Supported Contact Fields
 
-| Field                 | Type                   | Requires Permission | Notes                                         |
-| --------------------- | ---------------------- | ------------------- | --------------------------------------------- |
-| `fullName`            | `String?`              | ❌                  | Always available                              |
-| `phoneNumbers`        | `List<String>?`        | ❌                  | All numbers linked to contact                 |
-| `selectedPhoneNumber` | `String?`              | ❌                  | Only in `selectPhoneNumber()`                |
-| `emailAddresses`      | `List<EmailAddress>?`  | ✅                  | With label (e.g., work, personal)             |
-| `avatar`              | `String? (base64)`     | ✅                  | Base64-encoded contact photo                  |
-| `postalAddresses`     | `List<PostalAddress>?` | ✅                  | Full address info with label                  |
-| `organizationInfo`    | `OrganizationInfo?`    | ✅                  | Company + job title                           |
-| `birthday`            | `String? (ISO 8601)`   | ✅                  | Example: `1994-11-12`                         |
-| `notes`               | `String?`              | ✅                  | User-entered notes                            |
-| `websiteURLs`         | `List<String>?`        | ✅ (Android only)   | List of websites linked to the contact        |
+| Field                 | Type                   | Requires Permission | Notes                                  |
+| --------------------- | ---------------------- | ------------------- | -------------------------------------- |
+| `fullName`            | `String?`              | ❌                  | Always available                       |
+| `phoneNumbers`        | `List<String>?`        | ❌                  | All numbers linked to contact          |
+| `selectedPhoneNumber` | `String?`              | ❌                  | Only in `selectPhoneNumber()`          |
+| `emailAddresses`      | `List<EmailAddress>?`  | ✅                  | With label (e.g., work, personal)      |
+| `avatar`              | `String? (base64)`     | ✅                  | Base64-encoded contact photo           |
+| `postalAddresses`     | `List<PostalAddress>?` | ✅                  | Full address info with label           |
+| `organizationInfo`    | `OrganizationInfo?`    | ✅                  | Company + job title                    |
+| `birthday`            | `String? (ISO 8601)`   | ✅                  | Example: `1994-11-12`                  |
+| `notes`               | `String?`              | ✅                  | User-entered notes                     |
+| `websiteURLs`         | `List<String>?`        | ✅ (Android only)   | List of websites linked to the contact |
 
 > ℹ️ If permissions are denied, the plugin falls back to basic fields only (`fullName`, `phoneNumbers`) **without crashing**.
 
@@ -134,46 +133,46 @@ Same as Android — refer to the example in the Android section.
 
 ### Contact
 
-| Property              | Type                   | Description                                  |
-| --------------------- | ---------------------- | -------------------------------------------- |
-| `fullName`            | `String?`              | Contact name                                 |
-| `phoneNumbers`        | `List<String>?`        | All contact phone numbers                    |
-| `selectedPhoneNumber` | `String?`              | Selected number via `selectPhoneNumber()`    |
-| `mobilePhoneNumber`   | `String?`              | Mobile phone number                          |
-| `workPhoneNumber`     | `String?`              | Work phone number                            |
-| `homePhoneNumber`     | `String?`              | Home phone number                            |
-| `emailAddresses`      | `List<EmailAddress>?`  | Email addresses with labels                  |
-| `avatar`              | `String?`              | Base64 avatar image                          |
-| `postalAddresses`     | `List<PostalAddress>?` | Address list with labels                     |
-| `organizationInfo`    | `OrganizationInfo?`    | Company and job title                        |
-| `birthday`            | `String?`              | ISO-8601 formatted birthday                  |
-| `notes`               | `String?`              | User notes                                   |
-| `websiteURLs`         | `List<String>?`        | Contact websites                             |
+| Property              | Type                   | Description                               |
+| --------------------- | ---------------------- | ----------------------------------------- |
+| `fullName`            | `String?`              | Contact name                              |
+| `phoneNumbers`        | `List<String>?`        | All contact phone numbers                 |
+| `selectedPhoneNumber` | `String?`              | Selected number via `selectPhoneNumber()` |
+| `mobilePhoneNumber`   | `String?`              | Mobile phone number                       |
+| `workPhoneNumber`     | `String?`              | Work phone number                         |
+| `homePhoneNumber`     | `String?`              | Home phone number                         |
+| `emailAddresses`      | `List<EmailAddress>?`  | Email addresses with labels               |
+| `avatar`              | `String?`              | Base64 avatar image                       |
+| `postalAddresses`     | `List<PostalAddress>?` | Address list with labels                  |
+| `organizationInfo`    | `OrganizationInfo?`    | Company and job title                     |
+| `birthday`            | `String?`              | ISO-8601 formatted birthday               |
+| `notes`               | `String?`              | User notes                                |
+| `websiteURLs`         | `List<String>?`        | Contact websites                          |
 
 ### EmailAddress
 
-| Property | Type      | Description      |
-| -------- | --------- | ---------------- |
-| `email`  | `String?` | Email address    |
-| `label`  | `String?` | e.g., "home"     |
+| Property | Type      | Description   |
+| -------- | --------- | ------------- |
+| `email`  | `String?` | Email address |
+| `label`  | `String?` | e.g., "home"  |
 
 ### PostalAddress
 
-| Property     | Type      | Description    |
-| ------------ | --------- | -------------- |
-| `street`     | `String?` | Street name    |
-| `city`       | `String?` | City           |
-| `state`      | `String?` | State          |
-| `postalCode` | `String?` | Postal code    |
-| `country`    | `String?` | Country name   |
-| `label`      | `String?` | e.g., "work"   |
+| Property     | Type      | Description  |
+| ------------ | --------- | ------------ |
+| `street`     | `String?` | Street name  |
+| `city`       | `String?` | City         |
+| `state`      | `String?` | State        |
+| `postalCode` | `String?` | Postal code  |
+| `country`    | `String?` | Country name |
+| `label`      | `String?` | e.g., "work" |
 
 ### OrganizationInfo
 
-| Property   | Type      | Description     |
-| ---------- | --------- | --------------- |
-| `company`  | `String?` | Company name    |
-| `jobTitle` | `String?` | Job title       |
+| Property   | Type      | Description  |
+| ---------- | --------- | ------------ |
+| `company`  | `String?` | Company name |
+| `jobTitle` | `String?` | Job title    |
 
 ---
 
@@ -316,6 +315,7 @@ Also, for whole example, check out the **example** app in the [example](https://
   <tr>
     <td align="center"><a href="https://github.com/bousalem98"><img src="https://avatars.githubusercontent.com/u/61710794?v=4" width="100px;" alt=""/><br /><sub><b>Mohamed Salem</b></sub></a></td>
     <td align="center"><a href="https://github.com/jayeshpansheriya"><img src="https://avatars.githubusercontent.com/u/31765271?v=4" width="100px;" alt=""/><br /><sub><b>Jayesh Pansheriya</b></sub></a></td>
+    <td align="center"><a href="https://github.com/StephenOelofsePropMe"><img src="https://avatars.githubusercontent.com/u/206001898?v=4" width="100px;" alt=""/><br /><sub><b>Stephen Oelofse</b></sub></a></td>
   </tr>
 </table>
 <br/>
