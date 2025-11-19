@@ -1,3 +1,7 @@
+## [1.3.1] - Internal Code Improvements
+
+- Minor code refactoring for better Flutter compatibility
+
 ## [1.3.0] - Major Android Stability Patch
 
 ### 🧩 Fixes & Improvements

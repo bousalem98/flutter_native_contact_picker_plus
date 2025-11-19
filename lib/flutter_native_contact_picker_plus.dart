@@ -1,6 +1,5 @@
 import 'dart:async';
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_contact_picker_plus/model/contact_model.dart';
 
@@ -20,7 +19,7 @@ class FlutterContactPickerPlus {
 
   /// Method to call native code and get multiple contacts' details (iOS only).
   Future<List<Contact>?> selectContacts() async {
-    if (!Platform.isIOS) {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
       throw UnimplementedError('selectContacts is only supported on iOS');
     }
     final List<dynamic>? result = await _channel.invokeMethod('selectContacts');
