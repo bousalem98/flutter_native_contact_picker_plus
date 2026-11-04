@@ -1,7 +1,7 @@
 ## [1.3.2] - Migrate Android Build to Built-in Kotlin (AGP 9)
 
 - 🤖 **Migrate Android build to built-in Kotlin:**
-  - Migrated build configuration to Android Gradle Plugin (AGP) 9 built-in Kotlin support (`android.builtInKotlin=true`).
+  - Migrated build configuration to Android Gradle Plugin (AGP) 9.0.1 and Gradle 9.1.0 with built-in Kotlin support.
   - Dropped deprecated `kotlin-android` Gradle plugin and moved `jvmTarget` to `kotlin.compilerOptions`.
   - Thanks to [@ljubenAtPropertyMe](https://github.com/ljubenAtPropertyMe) for the contribution! ([#3](https://github.com/bousalem98/flutter_native_contact_picker_plus/pull/3))
 
